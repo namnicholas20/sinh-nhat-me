@@ -57,10 +57,12 @@ button:focus-visible{outline:3px solid var(--pink);outline-offset:3px}
 .scratch{position:relative;width:300px;max-width:100%;aspect-ratio:3/2;border-radius:14px;overflow:hidden;background:var(--cream);color:var(--ink);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:14px;box-sizing:border-box}
 .scratch canvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none;cursor:grab}
 .scratch .big{font:800 1.3rem var(--disp);color:#d6336c}
+#mute{position:fixed;top:calc(10px + env(safe-area-inset-top,0px));right:max(12px,env(safe-area-inset-right,0px));z-index:6;width:44px;height:44px;border-radius:50%;border:0;background:#ffffff22;color:var(--cream);font-size:20px;cursor:pointer}
 #confetti{position:fixed;inset:0;pointer-events:none;z-index:5}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 
+<button id="mute" hidden aria-label="Tắt nhạc">🔊</button>
 <canvas id="confetti"></canvas>
 <main class="stage">
 
@@ -122,8 +124,27 @@ button:focus-visible{outline:3px solid var(--pink);outline-offset:3px}
 const $=id=>document.getElementById(id);
 function go(id){document.querySelectorAll('.scene').forEach(s=>s.hidden=s.id!==id);scrollTo(0,0)}
 document.querySelectorAll('[data-next]').forEach(b=>b.onclick=()=>{go(b.dataset.next);boom(60)});
-$('gift').onclick=()=>{$('gift').classList.add('open');boom(120);setTimeout(()=>go('s2'),900)};
+$('gift').onclick=()=>{startMusic();$('gift').classList.add('open');boom(120);setTimeout(()=>go('s2'),900)};
 let blown=false;document.querySelector('.cake').onclick=()=>{if(blown)return;blown=true;$('flame').classList.add('out');$('smoke').classList.add('go');boom(200);setTimeout(()=>go('s3'),1500)};
+
+
+// Happy Birthday melody (public domain), played with Web Audio as a music box
+let ac,master,muted=false,loopT;
+const N={G4:392,A4:440,B4:493.9,C5:523.3,D5:587.3,E5:659.3,F5:698.5,G5:784};
+const song=[['G4',.75],['G4',.25],['A4',1],['G4',1],['C5',1],['B4',2],
+['G4',.75],['G4',.25],['A4',1],['G4',1],['D5',1],['C5',2],
+['G4',.75],['G4',.25],['G5',1],['E5',1],['C5',1],['B4',1],['A4',2],
+['F5',.75],['F5',.25],['E5',1],['C5',1],['D5',1],['C5',3]];
+function note(f,t,d){const o=ac.createOscillator(),o2=ac.createOscillator(),g=ac.createGain();
+ o.type='triangle';o.frequency.value=f;o2.type='sine';o2.frequency.value=f*2;
+ g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.25,t+.02);g.gain.exponentialRampToValueAtTime(.001,t+d+.4);
+ o.connect(g);o2.connect(g);g.connect(master);o.start(t);o2.start(t);o.stop(t+d+.5);o2.stop(t+d+.5)}
+function playSong(){const beat=.42;let t=ac.currentTime+.1;
+ song.forEach(([n,b])=>{note(N[n],t,b*beat);t+=b*beat});
+ loopT=setTimeout(playSong,(t-ac.currentTime+1.5)*1000)}
+function startMusic(){try{if(ac)return;ac=new (window.AudioContext||window.webkitAudioContext)();
+ master=ac.createGain();master.gain.value=.6;master.connect(ac.destination);ac.resume();playSong();$('mute').hidden=false}catch(e){}}
+$('mute').onclick=()=>{muted=!muted;master.gain.value=muted?0:.6;$('mute').textContent=muted?'🔇':'🔊';$('mute').setAttribute('aria-label',muted?'Bật nhạc':'Tắt nhạc')};
 
 // confetti
 const cv=$('confetti'),cx=cv.getContext('2d');let bits=[];
