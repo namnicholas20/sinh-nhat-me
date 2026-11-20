@@ -58,6 +58,9 @@ button:focus-visible{outline:3px solid var(--pink);outline-offset:3px}
 .scratch canvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none;cursor:grab}
 .scratch .big{font:800 1.3rem var(--disp);color:#d6336c}
 #mute{position:fixed;top:calc(10px + env(safe-area-inset-top,0px));right:max(12px,env(safe-area-inset-right,0px));z-index:6;width:44px;height:44px;border-radius:50%;border:0;background:#ffffff22;color:var(--cream);font-size:20px;cursor:pointer}
+.photos.one{grid-template-columns:1fr;max-width:320px;cursor:pointer}
+.photos.one .pol{transform:rotate(-2deg);animation:fly .6s}
+.photos.one .pol p{font-size:1rem}
 #confetti{position:fixed;inset:0;pointer-events:none;z-index:5}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
@@ -145,6 +148,15 @@ function playSong(){const beat=.42;let t=ac.currentTime+.1;
 function startMusic(){try{if(ac)return;ac=new (window.AudioContext||window.webkitAudioContext)();
  master=ac.createGain();master.gain.value=.6;master.connect(ac.destination);ac.resume();playSong();$('mute').hidden=false}catch(e){}}
 $('mute').onclick=()=>{muted=!muted;master.gain.value=muted?0:.6;$('mute').textContent=muted?'🔇':'🔊';$('mute').setAttribute('aria-label',muted?'Bật nhạc':'Tắt nhạc')};
+
+
+// photos: one per tap
+const pols=[...document.querySelectorAll('.pol')],ph=document.querySelector('.photos'),pbtn=document.querySelector('#s3 [data-next]'),pc=document.createElement('p');
+pc.className='hint';ph.after(pc);ph.classList.add('one');ph.setAttribute('role','button');ph.tabIndex=0;let pi=0;
+function showP(){pols.forEach((p,i)=>{p.hidden=i!==pi;p.style.animationDelay='0s'});const last=pi===pols.length-1;
+ pbtn.hidden=!last;pc.textContent=(pi+1)+' / '+pols.length+(last?'':' · Chạm vào ảnh để xem tiếp 👉')}
+function nextP(){if(pi<pols.length-1){pi++;showP();boom(30)}}
+ph.onclick=nextP;ph.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();nextP()}};showP();
 
 // confetti
 const cv=$('confetti'),cx=cv.getContext('2d');let bits=[];
